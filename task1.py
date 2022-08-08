@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-import copy
-import xlrd
-import xlsxwriter
 import tkinter as tk
 import ttkbootstrap as ttk
 from tkinter import filedialog
 from ttkbootstrap.constants import *
 from openpyxl import load_workbook
 from openpyxl import Workbook
-from openpyxl.drawing.image import Image
 
 def get_path():
     app_path = ""
@@ -21,45 +17,44 @@ def get_path():
     return app_path
 
 def merge(file_list, save_file_name):#用于合并excel的函数
-    #获取保存路径
-    save_path=get_path()
+    result=""
+    try:
+        xl0 = file_list[0]
+        data0 = []  # 复制表头数据
+        wb0 = load_workbook(filename=xl0)
+        ws0 = wb0.active
+        for i in range(1, ws0.max_column + 1):
+            data0.append(ws0.cell(row=1, column=i).value)
 
-    if not os.path.exists(save_path + '\\' + save_file_name):
-        wb = Workbook()
-        # ws = wb.active
-        wb.save(save_file_name)
-    wbo = load_workbook(save_file_name)
-    wso = wbo.active
-    x=0#单元格定位x
-    # 保存表头，默认以第一张表的表头为准
-    title_excel = load_workbook(file_list[0])
-    sheet = title_excel.active
-    for i in range(1, sheet.max_column+1):
-        wso.cell(1, i, sheet.cell(1, i).value)
+        data1 = []  # 复制数据
+        num = len(file_list)
+        for n in range(num):
+            xf = file_list[n]
+            wb1 = load_workbook(filename=xf)
+            ws1 = wb1.active
+            for i in range(2, ws1.max_row + 1):
+                list = []
+                for j in range(1, ws1.max_column + 1):
+                    list.append(ws1.cell(row=i, column=j).value)
+                data1.append(list)
 
-    for f in file_list:
-        wbt = load_workbook(f)
-        wst = wbt.active
-        max_row = wst.max_row
-        max_column = wst.max_column
-        for i in range(2,max_row+1):
-            for j in range(1,max_column+1):
-                v = wst.cell(i,j).value
-                if v:
-                    wso.cell(x+i,j,v)
-                    if wst.cell(i,j).has_style:
-                        wso.cell(x+1, j)._style = copy.copy(wst.cell(i,j)._style)
-                        wso.cell(x+1, j).font = copy.copy(wst.cell(i,j).font)
-                        wso.cell(x+1, j).border = copy.copy(wst.cell(i,j).border)
-                        wso.cell(x+1, j).fill = copy.copy(wst.cell(i,j).fill)
-                        wso.cell(x+1, j).number_format = copy.copy(wst.cell(i,j).number_format)
-                        wso.cell(x+1, j).protection = copy.copy(wst.cell(i,j).protection)
-                        wso.cell(x+1, j).alignment = copy.copy(wst.cell(i,j).alignment)
-
-        x=max_row-1
-    wbo.save(save_file_name)
-    print('合并完成...')
-
+        #汇总表头和数据,新建保存总表
+        data = []
+        data.append(data0)  # 添加表头
+        for l in range(len(data1)):  # 添加数据
+            data.append(data1[l])
+        wb = Workbook()  # 新建表
+        ws = wb.active
+        ws.title = 'sheet'
+        for n_row in range(1, len(data) + 1):  # 写入数据
+            for n_col in range(1, len(data[n_row - 1]) + 1):
+                ws.cell(row=n_row,column=n_col,value=str(data[n_row-1][n_col-1]).replace('None',''))
+        wb.save(filename=save_file_name)  # 保存xlsx
+        result="文件保存成功！保存到："+get_path()
+        return result
+    except:
+        result="文件生成失败，请重试！"
+        return result
 
 
 class basedesk():#主界面
@@ -123,6 +118,9 @@ class merge_excel():
         self.clear=ttk.Button(self.merge_face, text='清空所有选择', command=self.clear_files)#--------清空所有选择按钮
         self.clear.grid(row=0, column=2, sticky=W, padx=10, pady=10)
         self.clear.grid_forget()
+        self.back=ttk.Button(self.merge_face, text="     返回     ", command=self.to_iniface)#----------------返回主界面按钮
+        self.back.grid(row=3, column=2, sticky=W, padx=10, pady=10)
+
 
         #标签组件
         self.message_label=ttk.Label(self.merge_face, text="消息框")#--------------------------------消息框标签
@@ -138,7 +136,7 @@ class merge_excel():
         self.message_box.config(state=DISABLED)
         self.message_box.grid(row=1, column=1, sticky=W, padx=10)
 
-        #--------------控制方法-------------------
+    #--------------控制方法-------------------
     def choose_folder(self):
         """
 
@@ -201,17 +199,20 @@ class merge_excel():
                 self.message_box.config(state=DISABLED)
 
     def merge(self):
+        result=""
         file_name=self.file_name.get()
         if file_name:#如果标明了文件名，判断文件名是否合法，则执行合并程序
             if file_name[-5:] == '.xlsx':
-                merge(self.file_path, file_name)
+                result=merge(self.file_path, file_name)
+                self.message_box.config(state=NORMAL)
+                self.message_box.insert(END, result)
+                self.message_box.config(state=DISABLED)
             else:#若文件名不合法，做出提示
                 self.file_name.insert(END, "    起名格式为：文件名.xlsx")
                 self.file_name.config(bootstyle='warning')
         else:#否则在messagebox最后提示要起名
             self.file_name.insert(0, "请为整合后的文件起名！")
             self.file_name.config(bootstyle='danger')
-
 
     def clear_files(self):
         #清空folder_path和file_path所有内容，并清空message box，隐藏合并按钮和清空按钮
@@ -221,6 +222,10 @@ class merge_excel():
         self.message_box.config(state=DISABLED)
         self.confirm.grid_forget()
         self.clear.grid_forget()
+
+    def to_iniface(self):
+        self.merge_face.destroy()
+        initface(self.master)
 
 
 if __name__ == '__main__':
