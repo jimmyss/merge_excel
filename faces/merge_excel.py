@@ -45,6 +45,7 @@ class merge_excel():
         self.message_label.grid(row=1, column=0, sticky=NE, pady=10, padx=10)
         self.file_label=ttk.Label(self.merge_face, text="保存的文件名")#------------------------------保存文件名标签
         self.file_label.grid(row=3, column=0, sticky=NE, pady=10, padx=10)
+
         #输入框组件
         self.file_name=ttk.Entry(self.merge_face, width=35)#----------------------------------------保存文件名输入框
         self.file_name.grid(row=3, column=1, sticky=W, padx=10, pady=10)

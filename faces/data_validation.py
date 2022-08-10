@@ -39,9 +39,6 @@ class data_validation():
         self.submit_button.grid(row=4, column=3, sticky=W, pady=10, padx=10)
         self.submit_button.grid_forget()
 
-        #输入框组件
-
-
         #下拉框组件
         self.base_box=ttk.Combobox(master=self.dataVali_face, textvariable=self.select_base_sheet, font=('微软雅黑', 10),#---------------------选择工作簿
                                    values=self.base_select_data, height=15, width=30, state='normal', cursor='plus',
