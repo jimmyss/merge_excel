@@ -1,6 +1,4 @@
 /.idea/
 /venv/
-/dist/
 /build/
-*.spec
 test.py
