@@ -9,7 +9,6 @@ class basedesk():#主界面
         self.root.config()
         self.root.title('Base page')
         self.root.geometry('750x400')
-
         init_face(self.root)
 
 if __name__ == '__main__':

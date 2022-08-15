@@ -9,6 +9,13 @@ def get_path():
         app_path = os.path.dirname(os.path.abspath(__file__)).replace("\\", "/")
     return app_path
 
+class re_Text():
+
+    def __init__(self, queue):
+        self.queue = queue
+
+    def write(self, content):
+        self.queue.put(content)
 
 class GressBar():
 

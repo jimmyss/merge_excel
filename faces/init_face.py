@@ -12,6 +12,8 @@ class init_face():
         """
         self.master = master
         self.master.config()
+        #线程池
+        self.thread_list=[]
         # 基准界面initface
         self.initface = ttk.Frame(self.master, )
         self.initface.grid(row=0, column=0)
@@ -35,3 +37,6 @@ class init_face():
     def to_revenue_division(self):
         self.initface.destroy()
         revenue_division.revenue_division(self.master)
+
+    def get_thread_list(self):
+        return self.thread_list

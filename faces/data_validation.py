@@ -1,10 +1,14 @@
+import sys
+import queue
 import ttkbootstrap as ttk
+import tkinter.messagebox as messagebox
 from tkinter import filedialog
 from openpyxl import load_workbook
 from openpyxl.worksheet.datavalidation import DataValidation
 from ttkbootstrap.constants import *
-
+from threading import Thread
 from faces import init_face
+from faces.methods import re_Text
 
 
 class data_validation():
@@ -24,6 +28,7 @@ class data_validation():
         self.base_select_data=['张三','李四']
         self.file_path=""
         self.work_sheet=""
+        self.msg_queue = queue.Queue()
 
         # --------------合并excel表格界面--------------------
         self.dataVali_face = ttk.Frame(self.master,)
@@ -86,6 +91,11 @@ class data_validation():
         self.message_box.config(state=DISABLED)
         self.message_box.grid(row=5, column=1, sticky=W, padx=10)
 
+        # 启动after方法
+        self.master.after(100, self.show_msg)
+
+        # 映射stdout到re_Text
+        sys.stdout = re_Text(self.msg_queue)
 
     # --------------控制方法-------------------
     def to_iniface(self):
@@ -102,19 +112,21 @@ class data_validation():
         work_book=load_workbook(self.file_path)
         work_sheet=work_book[self.base_box.get()]#打开工作簿
         data_sheet=work_book[self.data_source_box.get()]
+        print('成功打开工作簿')
         #循环把指定列设置数据有效性
         ws_max_row=work_sheet.max_row
         ds_max_row=data_sheet.max_row
+        print('正在修改数据有效性')
         for i in range(2, ws_max_row+1):
             cell=operate_col.replace('\n','')+str(i)
-            print(cell)
             formuala='=OFFSET({0}!${1}$1, MATCH("*"&${2}&"*", {0}!${1}$2:${1}${3},0),, COUNTIF({0}!${1}$2:${1}${3},"*"&${2}&"*"),)'.format(self.data_source_box.get(), source_col.replace('\n',''), cell, ds_max_row)
             dv=DataValidation(type='list', formula1=formuala, allow_blank=True)
             dv.showErrorMessage = False
             dv.add(cell)
             work_sheet.add_data_validation(dv)
         work_book.save(self.file_path)
-        return "修改成功"
+        print("修改成功，保存在："+self.file_path)
+        messagebox.showinfo(title='数据有效性任务通知', message='数据有效性修改完成，保存在：'+self.file_path)
 
 
     def submit_valid(self):
@@ -139,8 +151,8 @@ class data_validation():
 
         #若有数据进一步检查数据是否正确
         #操作表格增加数据有效性
-        result=self.add_validation(operate_col=self.operate_col.get('1.0','end'), source_col=self.data_col.get('1.0','end'))
-        self.set_message_box(result)
+        t=Thread(target=self.add_validation, args=(self.operate_col.get('1.0','end'), self.data_col.get('1.0','end')))
+        t.start()
 
     def set_value_before_choose(self, base_server_data, select_base_sheet, base_box):
         """
@@ -190,3 +202,14 @@ class data_validation():
         self.submit_button.grid(row=4, column=3, sticky=W, pady=10, padx=10)
         self.data_source_col_label.grid(row=4, column=0, sticky=E, padx=10, pady=10)
         self.data_col_label.grid(row=4, column=2, sticky=W, padx=10, pady=10)
+
+    def show_msg(self):
+        while not self.msg_queue.empty():
+            content = self.msg_queue.get()
+            self.message_box.config(state=NORMAL)
+            self.message_box.insert(INSERT, content)
+            self.message_box.see(END)
+            self.message_box.config(state=DISABLED)
+
+        # after方法再次调用show_msg
+        self.master.after(100, self.show_msg)

@@ -1,11 +1,16 @@
 import os
+import queue
+import sys
+import tkinter.messagebox as messagebox
 import ttkbootstrap as ttk
 from tkinter import filedialog
 from openpyxl import Workbook
 from openpyxl import load_workbook
 from ttkbootstrap.constants import *
 from faces import init_face
-from methods import get_path
+from faces.methods import get_path, re_Text
+from threading import Thread
+
 
 class merge_excel():
 
@@ -19,6 +24,7 @@ class merge_excel():
 
         #--------------变量-------------
         self.file_path=[]
+        self.msg_queue=queue.Queue()
 
         #--------------合并excel表格界面--------------------
         self.merge_face = ttk.Frame(self.master,)
@@ -28,7 +34,7 @@ class merge_excel():
         #按钮组件
         self.choose_folder=ttk.Button(self.merge_face, text='选择文件夹', command=self.choose_folder)#选择文件夹按钮
         self.choose_folder.grid(row=0, column=0, sticky=E, padx=10, pady=10)
-        self.confirm=ttk.Button(self.merge_face, text='确认选择并合并', command=self.merge)#-----------确认合并按钮
+        self.confirm=ttk.Button(self.merge_face, text='确认选择并合并', command=self.start_merge_thread)#-----------确认合并按钮
         self.confirm.grid(row=2, column=1, padx=10, pady=10)
         self.confirm.grid_forget()
         self.manual_choose=ttk.Button(self.merge_face, text='手动选择文件', command=self.choose_file)#手动选择文件按钮
@@ -54,6 +60,12 @@ class merge_excel():
         self.message_box=ttk.Text(self.merge_face, height=10, width=70)#----------------------------消息框组件
         self.message_box.config(state=DISABLED)
         self.message_box.grid(row=1, column=1, sticky=W, padx=10)
+
+        #启动after方法
+        self.master.after(100, self.show_msg)
+
+        #映射stdout到re_Text
+        sys.stdout = re_Text(self.msg_queue)
 
     #--------------控制方法-------------------
     def choose_folder(self):
@@ -117,15 +129,13 @@ class merge_excel():
                 self.clear.grid_forget()
                 self.message_box.config(state=DISABLED)
 
-    def merge(self):
-        result=""
+    def start_merge_thread(self):
         file_name=self.file_name.get()
         if file_name:#如果标明了文件名，判断文件名是否合法，则执行合并程序
             if file_name[-5:] == '.xlsx':
-                result=merge(self.file_path, file_name)
-                self.message_box.config(state=NORMAL)
-                self.message_box.insert(END, result)
-                self.message_box.config(state=DISABLED)
+                #开始线程
+                t=Thread(target=merge, args=(self.file_path, file_name))
+                t.start()
             else:#若文件名不合法，做出提示
                 self.file_name.insert(END, "    起名格式为：文件名.xlsx")
                 self.file_name.config(bootstyle='warning')
@@ -142,12 +152,22 @@ class merge_excel():
         self.confirm.grid_forget()
         self.clear.grid_forget()
 
+    def show_msg(self):
+        while not self.msg_queue.empty():
+            content = self.msg_queue.get()
+            self.message_box.config(state=NORMAL)
+            self.message_box.insert(INSERT, content)
+            self.message_box.see(END)
+            self.message_box.config(state=DISABLED)
+
+        # after方法再次调用show_msg
+        self.master.after(100, self.show_msg)
+
     def to_iniface(self):
         self.merge_face.destroy()
         init_face.init_face(self.master)
 
 def merge(file_list, save_file_name):#用于合并excel的函数
-    result=""
     try:
         xl0 = file_list[0]
         data0 = []  # 复制表头数据
@@ -185,9 +205,8 @@ def merge(file_list, save_file_name):#用于合并excel的函数
                 else:
                     ws.cell(row=n_row, column=n_col, value=str(data[n_row - 1][n_col - 1].value).replace('None', ''))
         wb.save(filename=save_file_name)  # 保存xlsx
-        result="文件保存成功！保存到："+get_path()
-        return result
+        messagebox.showinfo(title='合并excel任务通知', message="文件合并完成，文件保存成功！保存到：" + get_path())
+        print("文件合并完成，文件保存成功！保存到：" + get_path())
     except Exception as e:
-        print(e)
-        result="文件生成失败，请重试！"
-        return result
+        messagebox.showerror(title='合并excel任务通知', message="文件生成失败，请重试！")
+        print("文件生成失败，请重试！")
