@@ -25,17 +25,33 @@ class init_face():
         task4_but.grid(row=4, column=1, sticky=E, padx=10, pady=10)
 
     def to_merge_excel(self, ):
+        """
+
+        :return: 转到合并excel功能界面
+        """
         self.initface.destroy()
         merge_excel.merge_excel(self.master)
 
     def to_data_validation(self):
+        """
+
+        :return: 转到数据有效性功能界面
+        """
         self.initface.destroy()
         data_validation.data_validation(self.master)
 
     def to_revenue_division(self):
+        """
+
+        :return:转到分账功能界面
+        """
         self.initface.destroy()
         revenue_division.revenue_division(self.master)
 
     def to_bill_summary(self):
+        """
+
+        :return:转到 账单汇总功能界面
+        """
         self.initface.destroy()
         bill_summary.bill_summary(self.master)

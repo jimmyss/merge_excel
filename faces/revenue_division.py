@@ -13,6 +13,10 @@ from faces.methods import re_Text
 class revenue_division():
 
     def __init__(self, master):
+        """
+
+        :param master: 主界面变量传递，本函数主要是用来生成界面的所有组件
+        """
         self.master = master
         self.master.config()
 
@@ -64,6 +68,10 @@ class revenue_division():
     #-----------控制方法-------------
 
     def choose_file(self):
+        """
+
+        :return: 打开文件，选择需要分账的文件
+        """
         file_path=filedialog.askopenfilename(filetypes=[("需要分账的文件", "*.csv"),["需要分账的文件","*.xlsx"]])
         if file_path: # 如果选择了文件，在选择文件消息框显示选择的文件名,显示保存文件标签和输入框，以及制作收入分账按钮
             self.file_path=file_path
@@ -75,6 +83,10 @@ class revenue_division():
             self.notice_label.grid(row=2, column=1, padx=10, pady=10)
 
     def divide(self):
+        """
+
+        :return: 分账函数，主要生成一个竖表然后用竖表生成横表，文件保存在程序所在文件夹下
+        """
         with open(self.file_path) as csvfile:
             print('成功打开文件')
             csv_reader = csv.reader(csvfile)  # 使用csv.reader读取csvfile中的文件
@@ -158,6 +170,10 @@ class revenue_division():
         print('表格保存完成')
 
     def show_msg(self):
+        """
+
+        :return:用于给messagebox同步信息
+        """
         while not self.msg_queue.empty():
             content = self.msg_queue.get()
             self.message_box.config(state=NORMAL)
@@ -166,15 +182,23 @@ class revenue_division():
             self.message_box.config(state=DISABLED)
 
         # after方法再次调用show_msg
-        self.master.after(100, self.show_msg)
+        self.master.after(500, self.show_msg)
 
     def start_thread(self):
+        """
+
+        :return: 在点击分账按钮后，控制生成线程
+        """
         if self.save_entry.get():
             t=Thread(target=self.divide, args=())
             t.start()
         else:
-            print("no")
+            print("任务生成失败，请重试")
 
     def to_iniface(self):
+        """
+
+        :return:转到主界面
+        """
         self.division_face.destroy()
         init_face.init_face(self.master)

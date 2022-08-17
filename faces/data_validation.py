@@ -17,9 +17,8 @@ class data_validation():
 
         """
 
-        :param master: 主界面窗口
+        :param master: 主界面窗口，本函数会初始化界面的组件
         """
-
         self.master=master
         self.master.config()
         # ---------------变量----------------
@@ -99,16 +98,31 @@ class data_validation():
 
     # --------------控制方法-------------------
     def to_iniface(self):
+        """
+
+        :return:转到主界面
+        """
         self.dataVali_face.destroy()
         init_face.init_face(self.master)
 
     def set_message_box(self, text):
+        """
+
+        :param text: 需要设置的文字
+        :return:获取text内容，并且更新到message_box里
+        """
         self.message_box.config(state=NORMAL)
         self.message_box.delete('1.0', 'end')
         self.message_box.insert(END, text)
         self.message_box.config(state=DISABLED)
 
     def add_validation(self, operate_col, source_col):
+        """
+
+        :param operate_col: 需要加数据有效性的列
+        :param source_col: 数据源所在列
+        :return: 打开工作簿并根据数据源批量添加数据有效性
+        """
         work_book=load_workbook(self.file_path)
         work_sheet=work_book[self.base_box.get()]#打开工作簿
         data_sheet=work_book[self.data_source_box.get()]
@@ -130,6 +144,10 @@ class data_validation():
 
 
     def submit_valid(self):
+        """
+
+        :return:判断数据是否填写，并开启线程
+        """
         result=""
         #验证数据是否都填写
         if not self.base_box.get():
@@ -184,11 +202,21 @@ class data_validation():
             print("no")
 
     def get_sheet(self, file_path):
+        """
+
+        :param file_path:文件路径
+        :return:返回表单名称
+        """
         excel=load_workbook(file_path)
         sheets= excel.sheetnames
         return sheets
 
     def submit_base(self, event):
+        """
+
+        :param event:选择下拉框事件
+        :return:根据选择事件的发生，控制界面组件的展示
+        """
         self.operate_col.delete('1.0','end')
         self.base_col_label.grid(row=2, column=0, sticky=E, padx=10, pady=10)
         self.operate_col.grid(row=2, column=1, sticky=W, padx=10, pady=10)
@@ -197,6 +225,11 @@ class data_validation():
         self.operate_col_label.grid(row=2, column=2, sticky=W, padx=10, pady=10)
 
     def submit_ds(self, event):
+        """
+
+        :param event: 选择下拉框事件
+        :return: 根据选择事件的发生，控制界面组件的展示
+        """
         self.data_col.delete('1.0', 'end')
         self.data_col.grid(row=4, column=1, sticky=W, padx=10, pady=10)
         self.submit_button.grid(row=4, column=3, sticky=W, pady=10, padx=10)
@@ -204,6 +237,10 @@ class data_validation():
         self.data_col_label.grid(row=4, column=2, sticky=W, padx=10, pady=10)
 
     def show_msg(self):
+        """
+
+        :return: 用于给messagebox同步信息
+        """
         while not self.msg_queue.empty():
             content = self.msg_queue.get()
             self.message_box.config(state=NORMAL)
@@ -212,4 +249,4 @@ class data_validation():
             self.message_box.config(state=DISABLED)
 
         # after方法再次调用show_msg
-        self.master.after(100, self.show_msg)
+        self.master.after(500, self.show_msg)

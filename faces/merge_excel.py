@@ -82,17 +82,17 @@ class merge_excel():
             with os.scandir(folder_path) as i:
                 for entry in i:
                     if entry.is_file() and entry.name[-5:] == '.xlsx':
-                        self.file_path.append(entry.path.replace("\\","/"))
-                        self.message_box.insert(END, entry.path.replace("\\", "/")+'\n')
+                        self.file_path.append(entry.path.replace("\\","/"))#将所有\改为/方便读取文件
+                        self.message_box.insert(END, entry.path.replace("\\", "/")+'\n')#向message box里加入文件绝对路径
             self.message_box.config(state=DISABLED)
-            if self.file_path:
+            if self.file_path:#如果文件路径有数据，则展示按钮
                 self.confirm.grid(row=2, column=1, padx=10, pady=10)
                 self.clear.grid(row=0, column=2, padx=10, pady=10)
-            else:
+            else:#如果文件路径为空，则不展示按钮
                 self.confirm.grid_forget()
                 self.clear.grid_forget()
         else:#如果没选择文件夹，file path不变
-            if not self.file_path:
+            if not self.file_path:#如果如果文件路径为空，则不展示按钮，并且清空message box
                 self.message_box.config(state=NORMAL)
                 self.message_box.delete('1.0', 'end')
                 self.confirm.grid_forget()
@@ -109,16 +109,16 @@ class merge_excel():
             self.message_box.config(state=NORMAL)
             self.message_box.delete("1.0", "end")
             self.message_box.insert(END, '待合并的excel：\n')
-            for f in files:
-                if f not in self.file_path:
+            for f in files:#遍历files
+                if f not in self.file_path:#如果这个文件没有选择，就把它加进file path中
                     self.file_path.append(f)
-            for f in self.file_path:
+            for f in self.file_path:#将文件路径展示到message box中
                 self.message_box.insert(END, f+'\n')
             self.message_box.config(state=DISABLED)
-            if self.file_path:
+            if self.file_path:#如果file path有数据，展示下面的按钮
                 self.confirm.grid(row=2, column=1, padx=10, pady=10)
                 self.clear.grid(row=0, column=2, padx=10, pady=10)
-            else:
+            else:#否则不展示
                 self.confirm.grid_forget()
                 self.clear.grid_forget()
         else:#如果没选择文件，但是file path中有信息，不做变动，没有信息则清空message box，隐藏合并和清空按钮
@@ -130,6 +130,10 @@ class merge_excel():
                 self.message_box.config(state=DISABLED)
 
     def start_merge_thread(self):
+        """
+
+        :return:
+        """
         file_name=self.file_name.get()
         if file_name:#如果标明了文件名，判断文件名是否合法，则执行合并程序
             if file_name[-5:] == '.xlsx':
@@ -144,6 +148,10 @@ class merge_excel():
             self.file_name.config(bootstyle='danger')
 
     def clear_files(self):
+        """
+
+        :return:清空folder_path和file_path的所有内容，并清空message_box，隐藏合并按钮和清空按钮
+        """
         #清空folder_path和file_path所有内容，并清空message box，隐藏合并按钮和清空按钮
         self.file_path=[]
         self.message_box.config(state=NORMAL)
@@ -153,6 +161,10 @@ class merge_excel():
         self.clear.grid_forget()
 
     def show_msg(self):
+        """
+
+        :return:用于给messagebox同步信息
+        """
         while not self.msg_queue.empty():
             content = self.msg_queue.get()
             self.message_box.config(state=NORMAL)
@@ -161,13 +173,23 @@ class merge_excel():
             self.message_box.config(state=DISABLED)
 
         # after方法再次调用show_msg
-        self.master.after(100, self.show_msg)
+        self.master.after(500, self.show_msg)
 
     def to_iniface(self):
+        """
+
+        :return:返回主界面
+        """
         self.merge_face.destroy()
         init_face.init_face(self.master)
 
 def merge(file_list, save_file_name):#用于合并excel的函数
+    """
+
+    :param file_list:文件列表，保存文件的绝对路径
+    :param save_file_name: 保存文件的文件名，需要是xxx.xlsx格式
+    :return: 整合file_list中的文件，并以save_file_name来保存到程序所在文件夹下
+    """
     try:
         xl0 = file_list[0]
         data0 = []  # 复制表头数据
