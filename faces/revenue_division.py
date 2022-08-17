@@ -9,8 +9,9 @@ from threading import Thread
 from tkinter import filedialog
 from ttkbootstrap.constants import *
 from faces.methods import re_Text
+from openpyxl import load_workbook
 
-class revenue_division():
+class revenue_division:
 
     def __init__(self, master):
         """
@@ -87,30 +88,69 @@ class revenue_division():
 
         :return: 分账函数，主要生成一个竖表然后用竖表生成横表，文件保存在程序所在文件夹下
         """
-        with open(self.file_path) as csvfile:
-            print('成功打开文件')
-            csv_reader = csv.reader(csvfile)  # 使用csv.reader读取csvfile中的文件
-            header = next(csv_reader)        # 读取第一行每一列的标题
-            print('读取每列列名完成')
-            #保存关键列的位置
-            self.position.append(header.index('热点组')+1)
-            self.position.append(header.index('热点组收费渠道')+1)
-            self.position.append(header.index('支付方式')+1)
-            self.position.append(header.index('分账日期')+1)
-            self.position.append(header.index('实付')+1)
-            self.position.append(header.index('余额抵扣')+1)
-            result_rows={}
-            p=self.position#暂存特殊列所在位置
-            for row in csv_reader:  # 将csv 文件中的元组依次取出放入result_rows中
-                month=row[p[3] - 1].split('/', 2)[1]
-                if len(month)==1:
-                    month='0'+month
-                r=[row[p[0]-1], row[p[1]-1], row[p[2]-1], str(row[p[3]-1].split('/',2)[0])+month]
-                s=','.join(r)
-                if s not in result_rows:#如果第一次出现
-                    result_rows[s]=round(float(row[p[4]-1]),2)+round(float(row[p[5]-1]),2)
-                else:#若原来已经有了，则直接在金额上添加即可
-                    result_rows[s]+=round(float(row[p[4]-1]),2)+round(float(row[p[5]-1]),2)
+        if self.file_path[-4:]=='.csv':
+            with open(self.file_path) as csvfile:
+                print('成功打开文件')
+                csv_reader = csv.reader(csvfile)  # 使用csv.reader读取csvfile中的文件
+                header = next(csv_reader)        # 读取第一行每一列的标题
+                print('读取每列列名完成')
+                #保存关键列的位置
+                self.position.append(header.index('热点组')+1)
+                self.position.append(header.index('热点组收费渠道')+1)
+                self.position.append(header.index('支付方式')+1)
+                self.position.append(header.index('分账日期')+1)
+                self.position.append(header.index('实付')+1)
+                self.position.append(header.index('余额抵扣')+1)
+                result_rows={}
+                p=self.position#暂存特殊列所在位置
+                for row in csv_reader:  # 将csv 文件中的元组依次取出放入result_rows中
+                    month=row[p[3] - 1].split('/', 2)[1]#提取月份
+                    if len(month)==1:#补齐month，使它长度为2，如：07
+                        month='0'+month
+                    r=[row[p[0]-1], row[p[1]-1], row[p[2]-1], str(row[p[3]-1].split('/',2)[0])+month]#制作键
+                    s=','.join(r)#制作键
+                    if s not in result_rows:#如果第一次出现
+                        result_rows[s]=round(float(row[p[4]-1]),2)+round(float(row[p[5]-1]),2)#根据键 对应值
+                    else:#若原来已经有了，则直接在金额上添加即可
+                        result_rows[s]+=round(float(row[p[4]-1]),2)+round(float(row[p[5]-1]),2)
+        elif self.file_path[-5:] == '.xlsx':
+            try:
+                result_rows={}
+                wb = load_workbook(filename=self.file_path)
+                ws = wb.active
+                print('成功打开文件')
+                header=[]#保存表头数据
+                for i in range(1, ws.max_column + 1):
+                    header.append(ws.cell(row=1, column=i).value)
+                print('读取每列列名完成')
+                # 保存关键列的位置
+                self.position.append(header.index('热点组') + 1)
+                self.position.append(header.index('热点组收费渠道') + 1)
+                self.position.append(header.index('支付方式') + 1)
+                self.position.append(header.index('分账日期') + 1)
+                self.position.append(header.index('实付') + 1)
+                self.position.append(header.index('余额抵扣') + 1)
+                p = self.position  # 暂存特殊列所在位置
+                for row in ws:  # 将xlsx 文件中的元组依次取出放入result_rows中
+                    if row[0].row == 1:
+                        continue
+                    month = str(row[p[3] - 1].value).split()[0].split('-')[1]  # 提取月份
+                    if len(month) == 1:  # 补齐month，使它长度为2，如：07
+                        month = '0' + month
+                    r = [row[p[0] - 1].value, row[p[1] - 1].value, row[p[2] - 1].value, str(row[p[3] - 1].value).split()[0].split('-')[0] + month]  # 制作键
+                    s = ','.join(r)  # 制作键
+                    if s not in result_rows:  # 如果第一次出现
+                        result_rows[s] = round(float(row[p[4] - 1].value), 2) + round(float(row[p[5] - 1].value), 2)  # 根据键 对应值
+                    else:  # 若原来已经有了，则直接在金额上添加即可
+                        result_rows[s] += round(float(row[p[4] - 1].value), 2) + round(float(row[p[5] - 1].value), 2)
+            except Exception as e:
+                print('打开文件失败：'+self.file_path)
+                print(e)
+                messagebox.showerror(title='分账任务通知', message='打开文件失败'+self.file_path)
+        else:
+            print('目前仅支持打开 .xlsx 和 .csv 格式文件！')
+            messagebox.showwarning(title='分账任务通知', message='目前仅支持打开 .xlsx 和 .csv 格式文件！')
+            return
         #将result_rows中的数据依次导出到xlsx中，生成竖表
         print('生成竖表中')
         wb = openpyxl.Workbook()

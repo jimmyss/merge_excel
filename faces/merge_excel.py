@@ -12,7 +12,7 @@ from faces.methods import get_path, re_Text
 from threading import Thread
 
 
-class merge_excel():
+class merge_excel:
 
     def __init__(self, master):
         """

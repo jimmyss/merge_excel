@@ -93,7 +93,7 @@ class bill_summary():
                     month=[]
                     project=[]
                     money=[]
-                    cooperation=''
+                    cooperation=[]
                     for row in work_sheet:
                         for cell in row:
                             #检查有无读取到指定关键字
@@ -104,8 +104,8 @@ class bill_summary():
                                 count=0
                                 for i in range(cell.row+1, work_sheet.max_row):
                                     if work_sheet[i][month[1]-1].value:#如果有数值
-                                        if self.validate(work_sheet[i][month[1]-1].value.replace("\t","")):
-                                            month.append(work_sheet[i][month[1]-1].value.replace("\t",""))
+                                        if not self.is_chinese(str(work_sheet[i][month[1]-1].value).replace("\t","")):
+                                            month.append(str(work_sheet[i][month[1]-1].value).replace("\t",""))
                                             count=1
                                         elif count==1:
                                             break
@@ -115,39 +115,58 @@ class bill_summary():
                             elif cell.value=='结算项目':
                                 project.append(cell.row)
                                 project.append(cell.column)
-                                #从第一个非空单元格开始，向下读取信息，读取行数与月份行数一致
-                                count=0
-                                for j in range(cell.row+1, i):
-                                    if work_sheet[j][project[1]-1].value:#如果有值
-                                        project.append(work_sheet[j][project[1]-1].value)
-                                        count=1
-                                    elif count==1:#用空值代替
-                                        project.append('')
+
                             elif cell.value == '结算金额':
                                 money.append(cell.row)
                                 money.append(cell.column)
-                                #从第一个非空单元格开始，向下读取信息，读取行数与月份行数一致
-                                count = 0
-                                for j in range(cell.row+1, i):
-                                    if work_sheet[j][money[1]-1].value:#如果有值
-                                        money.append(round(work_sheet[j][money[1]-1].value, 2))
-                                        count = 1
-                                    elif count == 1:#用空值代替
-                                        money.append('')
-                            elif cell.value == '合作方名称':#若读取到合作方名称，向右读取一格
-                                if work_sheet[cell.row][cell.column].value:
-                                    cooperation=work_sheet[cell.row][cell.column].value
-                                else:
-                                    print('请在合作方名称后写具体名称！！')
+
+                            elif cell.value == '合作方名称':
+                                if cell.column+1 <= work_sheet.max_column:#若读取到合作方名称，且在右边有数据，则向右读取一格
+                                    if work_sheet[cell.row][cell.column].value:
+                                        cooperation.append(work_sheet[cell.row][cell.column].value)
+                                    else:
+                                        print('请在合作方名称后写具体名称！！')
+                                else:#若右边没有数据，则默认向下读取，即读取多个合作方名称
+                                    cooperation.append(cell.row)
+                                    cooperation.append(cell.column)
+                    #结算项目
+                    count = 0
+                    for j in range(project[0]+1, i):
+                        if work_sheet[j][project[1] - 1].value:  # 如果有值
+                            project.append(work_sheet[j][project[1] - 1].value)
+                            count = 1
+                        elif count == 1:  # 用空值代替
+                            project.append('')
+                    #结算金额
+                    count = 0
+                    for j in range(money[0]+1, i):
+                        if work_sheet[j][money[1] - 1].value:  # 如果有值
+                            money.append(round(float(work_sheet[j][money[1] - 1].value), 2))
+                            count = 1
+                        elif count == 1:  # 用空值代替
+                            money.append('')
+                    #合作方名称
+                    if len(cooperation) > 1:#如果是按照列读取
+                        count=0
+                        for j in range(cooperation[0]+1, i):
+                            if work_sheet[j][cooperation[1]-1].value:
+                                cooperation.append(work_sheet[j][cooperation[1]-1].value)
+                                count=1
+                            elif count==1:
+                                cooperation.append('')
                     #批量输出到整合的excel表中
                     for i in range(2, len(month)):
                         save_sheet.cell(row=save_row, column=1, value=project[i])
-                        save_sheet.cell(row=save_row, column=2, value=month[i])
+                        save_sheet.cell(row=save_row, column=2, value=month[i]).data_type='n'
                         save_sheet.cell(row=save_row, column=3, value=money[i])
-                        save_sheet.cell(row=save_row, column=4, value=cooperation)
+                        if len(cooperation)==1:
+                            save_sheet.cell(row=save_row, column=4, value=cooperation[0])
+                        else:
+                            save_sheet.cell(row=save_row, column=4, value=cooperation[i])
                         save_row+=1
-                except:
+                except Exception as e:
                     print("读取文件失败："+file)
+                    print(e)
                     messagebox.showerror(title='账单汇总任务通知', message='读取文件失败：\n'+file)
             save_book.save(self.file_name.get())
             print('\n文件保存成功，请前往小程序所在文件夹查看！')
@@ -169,6 +188,18 @@ class bill_summary():
         except ValueError:
             # raise ValueError("错误是日期格式或日期,格式是年-月-日")
             return False
+
+    def is_chinese(self, string):
+        """
+        检查整个字符串是否包含中文
+        :param string: 需要检查的字符串
+        :return: bool
+        """
+        for ch in string:
+            if u'\u4e00' <= ch <= u'\u9fff':
+                return True
+
+        return False
 
     def choose_folder(self):
         """
@@ -284,6 +315,3 @@ class bill_summary():
         """
         self.merge_face.destroy()
         init_face.init_face(self.master)
-
-
-
